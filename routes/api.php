@@ -13,12 +13,14 @@ use App\Http\Controllers\Api\Moderator\DashboardController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
-// Public Routes (Không cần đăng nhập)
+// Public Routes
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/tags', [TagController::class, 'index']);
 Route::get('/articles', [ArticleController::class, 'index']);
-Route::get('/articles/{article}', [ArticleController::class, 'show']);
+
+// ĐƯA ROUTE NÀY XUỐNG DƯỚI ROUTE MINE HOẶC GIỮ NGUYÊN NHƯNG PHẢI CẨN THẬN XUNG ĐỘT
+// Tốt nhất là để ArticleController::show ở cuối cùng của nhóm articles
 
 // Private Routes (Yêu cầu Token Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
@@ -34,7 +36,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar']);
     Route::put('/profile/password', [UserController::class, 'changePassword']);
 
-    // Articles
+    // Articles - ĐẶT MINE Ở ĐÂY LÀ ĐÚNG NHƯNG PHẢI CHẮN CHẮN NÓ KHÔNG BỊ ROUTE KHÁC ĐÈ
     Route::get('/articles/mine', [ArticleController::class, 'mine']);
 
     // Moderator Group
@@ -55,7 +57,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/users/{id}/role', [UserController::class, 'toggleRole']);
     Route::patch('/users/{id}/reset-password', [UserController::class, 'resetPassword']);
 
-    // API Resources (Tự động tạo store, show, update, destroy)
+    // API Resources
     Route::apiResource('users', UserController::class);
     Route::apiResource('articles', ArticleController::class)->except(['index', 'show']);
     Route::apiResource('categories', CategoryController::class)->except(['index']);
@@ -67,3 +69,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
 });
+
+// CUỐI CÙNG: Route có tham số biến để không đè lên các route cụ thể bên trên
+Route::get('/articles/{article}', [ArticleController::class, 'show']);
