@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 class Article extends Model
 {
     use HasFactory, HasUuids;
+
     protected $fillable = [
         'author_id',
         'category_id',
@@ -24,6 +25,11 @@ class Article extends Model
         'moderator_note'
     ];
 
+    public function comments()
+    {
+        return $this->hasMany(Comment::class, 'article_id');
+    }
+
     public function tags()
     {
         return $this->belongsToMany(Tag::class, 'article_tags');
@@ -37,5 +43,10 @@ class Article extends Model
     public function author()
     {
         return $this->belongsTo(User::class, 'author_id');
+    }
+
+    public function bookmarkedBy()
+    {
+        return $this->belongsToMany(User::class, 'bookmarks', 'article_id', 'user_id')->withTimestamps();
     }
 }

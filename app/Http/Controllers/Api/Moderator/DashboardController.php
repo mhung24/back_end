@@ -20,7 +20,7 @@ class DashboardController extends Controller
                 'total_users' => User::where('role', 'author')->count(),
                 'pending_articles' => Article::where('status', 'pending')->count(),
                 'approved_articles' => Article::where('status', 'published')->count(),
-                'total_views' => Article::sum('views_count') ?? 0,
+                'total_views' => Article::sum('views') ?? 0,
             ], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
@@ -33,7 +33,7 @@ class DashboardController extends Controller
             $query = Article::with(['author', 'category'])
                 ->where('status', 'pending');
 
-            if ($request->has('search')) {
+            if ($request->filled('search')) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('title', 'LIKE', "%{$search}%")
@@ -43,7 +43,7 @@ class DashboardController extends Controller
                 });
             }
 
-            if ($request->has('category_id') && $request->category_id != '') {
+            if ($request->filled('category_id')) {
                 $query->where('category_id', $request->category_id);
             }
 
@@ -62,10 +62,22 @@ class DashboardController extends Controller
     public function getArticleDetail($id)
     {
         try {
-            $article = Article::with(['author', 'category'])->findOrFail($id);
-            return response()->json(['data' => $article], 200);
+            $article = Article::with(['author', 'category', 'tags'])->findOrFail($id);
+
+            return response()->json([
+                'status' => 200,
+                'data' => $article
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'Không tìm thấy bài viết hoặc bài viết đã bị xóa'
+            ], 404);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Không tìm thấy bài viết'], 404);
+            return response()->json([
+                'status' => 500,
+                'message' => 'Lỗi hệ thống: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -100,8 +112,8 @@ class DashboardController extends Controller
                 'is_read' => false,
             ]);
 
-            try {
-                if (class_exists('Pusher\PushNotifications\PushNotifications')) {
+            if (env('PUSHER_BEAMS_INSTANCE_ID')) {
+                try {
                     $beamsClient = new PushNotifications([
                         "instanceId" => env('PUSHER_BEAMS_INSTANCE_ID'),
                         "secretKey" => env('PUSHER_BEAMS_SECRET_KEY'),
@@ -119,13 +131,12 @@ class DashboardController extends Controller
                             ]
                         ]
                     );
+                } catch (\Exception $e) {
+                    \Log::error("Pusher Beams Error: " . $e->getMessage());
                 }
-            } catch (\Exception $e) {
-                \Log::error("Pusher Beams Error: " . $e->getMessage());
             }
 
             DB::commit();
-
             return response()->json(['message' => 'Thành công'], 200);
 
         } catch (\Exception $e) {
@@ -143,17 +154,17 @@ class DashboardController extends Controller
 
             $monthlyData = Article::select(
                 DB::raw('MONTH(created_at) as month'),
-                DB::raw("SUM(CASE WHEN status = 'published' THEN 1 ELSE 0 END) as approved"),
+                DB::raw("SUM(CASE WHEN status = 'published' THEN 1 ELSE 0 END) as published"),
                 DB::raw("SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected")
             )
                 ->whereYear('created_at', date('Y'))
                 ->groupBy('month')
                 ->get();
 
-            $performance = array_fill(0, 12, ['approved' => 0, 'rejected' => 0]);
+            $performance = array_fill(0, 12, ['published' => 0, 'rejected' => 0]);
             foreach ($monthlyData as $data) {
                 $performance[$data->month - 1] = [
-                    'approved' => (int) $data->approved,
+                    'published' => (int) $data->published,
                     'rejected' => (int) $data->rejected
                 ];
             }

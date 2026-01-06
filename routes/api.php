@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\BookmarkController;
+use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\Moderator\ReportController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\ArticleController;
@@ -13,33 +15,30 @@ use App\Http\Controllers\Api\Moderator\DashboardController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
-// Public Routes
-Route::post('/login', [AuthController::class, 'login']);
+Route::prefix('users')->group(function () {
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/register', [AuthController::class, 'register']);
+});
+
+Route::post('/login', [AuthController::class, 'adminLogin']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/tags', [TagController::class, 'index']);
+Route::get('/articles/popular', [ArticleController::class, 'popular']);
 Route::get('/articles', [ArticleController::class, 'index']);
 
-// ĐƯA ROUTE NÀY XUỐNG DƯỚI ROUTE MINE HOẶC GIỮ NGUYÊN NHƯNG PHẢI CẨN THẬN XUNG ĐỘT
-// Tốt nhất là để ArticleController::show ở cuối cùng của nhóm articles
-
-// Private Routes (Yêu cầu Token Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
-
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // Profile
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile/update', [ProfileController::class, 'update']);
     Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar']);
     Route::put('/profile/password', [UserController::class, 'changePassword']);
 
-    // Articles - ĐẶT MINE Ở ĐÂY LÀ ĐÚNG NHƯNG PHẢI CHẮN CHẮN NÓ KHÔNG BỊ ROUTE KHÁC ĐÈ
     Route::get('/articles/mine', [ArticleController::class, 'mine']);
 
-    // Moderator Group
     Route::prefix('moderator')->group(function () {
         Route::get('/stats', [DashboardController::class, 'getStats']);
         Route::get('/articles/pending', [DashboardController::class, 'getPendingArticles']);
@@ -47,28 +46,34 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/statistics', [DashboardController::class, 'getStatistics']);
         Route::get('/articles/{id}', [DashboardController::class, 'getArticleDetail']);
         Route::patch('/articles/{id}/status', [DashboardController::class, 'updateArticleStatus']);
-
         Route::get('/reports', [ReportController::class, 'index']);
         Route::patch('/reports/{id}/status', [ReportController::class, 'updateStatus']);
     });
 
-    // User Management
     Route::post('/users/import', [UserController::class, 'importExcel']);
     Route::patch('/users/{id}/role', [UserController::class, 'toggleRole']);
     Route::patch('/users/{id}/reset-password', [UserController::class, 'resetPassword']);
 
-    // API Resources
     Route::apiResource('users', UserController::class);
+
+    // Đặt route lấy ID cụ thể TRƯỚC apiResource
+    Route::get('/articles/{id}', [ArticleController::class, 'show'])->where('id', '[0-9a-fA-F-]{36}');
+
     Route::apiResource('articles', ArticleController::class)->except(['index', 'show']);
     Route::apiResource('categories', CategoryController::class)->except(['index']);
     Route::apiResource('tags', TagController::class)->except(['index']);
 
-    // Others
     Route::post('/reports', [ReportController::class, 'store']);
     Route::post('/upload', [MediaController::class, 'store']);
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+
+    Route::get('/bookmarks', [BookmarkController::class, 'index']);
+    Route::post('/articles/{id}/bookmark', [BookmarkController::class, 'toggle']);
+
+    Route::post('/articles/{id}/comments', [CommentController::class, 'store']);
+    Route::put('/comments/{id}', [CommentController::class, 'update']);
+    Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
 });
 
-// CUỐI CÙNG: Route có tham số biến để không đè lên các route cụ thể bên trên
-Route::get('/articles/{article}', [ArticleController::class, 'show']);
+Route::get('/articles/{slug}', [ArticleController::class, 'showDetail']);

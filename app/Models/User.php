@@ -12,8 +12,6 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, HasUuids;
 
-    // app/Models/User.php
-
     protected $fillable = [
         'name',
         'email',
@@ -27,13 +25,15 @@ class User extends Authenticatable
         'reputation_score',
         'years_of_experience',
     ];
+
     protected $hidden = [
         'password',
         'remember_token',
     ];
+
     public function articles()
     {
-        return $this->hasMany(Article::class, 'id');
+        return $this->hasMany(Article::class, 'author_id');
     }
 
     protected function casts(): array
@@ -42,5 +42,10 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function bookmarkedArticles()
+    {
+        return $this->belongsToMany(Article::class, 'bookmarks', 'user_id', 'article_id')->withTimestamps();
     }
 }

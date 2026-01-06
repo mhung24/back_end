@@ -20,14 +20,27 @@ class ArticleController extends Controller
         $limit = $request->input('limit', 10);
 
         $articles = Article::with(['tags', 'category', 'author'])
-            ->when($request->keyword, function ($query, $keyword) {
+            ->when($request->filled('keyword') || $request->filled('search'), function ($query) use ($request) {
+                $keyword = trim($request->keyword ?? $request->search);
                 $query->where('title', 'like', '%' . $keyword . '%');
             })
             ->when($request->category_id, function ($query, $categoryId) {
                 $query->where('category_id', $categoryId);
             })
+            ->when($request->category, function ($query, $categorySlug) {
+                $query->whereHas('category', function ($q) use ($categorySlug) {
+                    $q->where('slug', $categorySlug);
+                });
+            })
+            ->when($request->tag, function ($query, $tagSlug) {
+                $query->whereHas('tags', function ($q) use ($tagSlug) {
+                    $q->where('slug', $tagSlug);
+                });
+            })
             ->when($request->status, function ($query, $status) {
                 $query->where('status', $status);
+            }, function ($query) {
+                $query->where('status', 'published');
             })
             ->latest()
             ->paginate($limit);
@@ -46,7 +59,6 @@ class ArticleController extends Controller
             ]
         ], 200);
     }
-
     public function store(StoreArticleRequest $request)
     {
         $validated = $request->validated();
@@ -63,7 +75,6 @@ class ArticleController extends Controller
                 'status' => 'pending',
             ]);
 
-            // Lưu thông báo vào database cho tác giả
             \App\Models\Notification::create([
                 'recipient_id' => $request->user()->id,
                 'actor_id' => $request->user()->id,
@@ -78,11 +89,6 @@ class ArticleController extends Controller
                 $article->tags()->attach($validated['tags']);
             }
 
-            // --- 1. NHẢY SỐ SIDEBAR (Pusher Channels) ---
-            // Tạo Event này bằng lệnh: php artisan make:event ArticleSubmitted
-            // broadcast(new \App\Events\ArticleSubmitted($article))->toOthers();
-
-            // --- 2. GỬI THÔNG BÁO POPUP (Pusher Beams) ---
             try {
                 $beamsClient = new PushNotifications([
                     "instanceId" => env('PUSHER_BEAMS_INSTANCE_ID'),
@@ -114,12 +120,45 @@ class ArticleController extends Controller
         }
     }
 
-    public function show(string $id)
+    public function showDetail(string $slug)
     {
-        $article = Article::with(['tags', 'category', 'author'])->find($id);
+        $article = Article::with(['tags', 'category', 'author', 'comments.user'])
+            ->withCount('comments')
+            ->where('slug', $slug)
+            ->where('status', 'published')
+            ->first();
 
         if (!$article) {
-            return response()->json(['message' => 'Không tìm thấy bài viết'], 404);
+            return response()->json([
+                'status' => 404,
+                'message' => 'Bài viết không tồn tại hoặc chưa được công khai'
+            ], 404);
+        }
+
+        $article->increment('views');
+
+        $isBookmarked = false;
+        if (auth('sanctum')->check()) {
+            $isBookmarked = auth('sanctum')->user()
+                ->bookmarkedArticles()
+                ->where('article_id', $article->id)
+                ->exists();
+        }
+
+        $article->is_bookmarked = $isBookmarked;
+
+        return new ArticleResource($article);
+    }
+
+    public function show(string $id)
+    {
+        $article = Article::with(['tags', 'category', 'author', 'comments.user'])->find($id);
+
+        if (!$article) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'Không tìm thấy bài viết'
+            ], 404);
         }
 
         return new ArticleResource($article);
@@ -207,5 +246,21 @@ class ArticleController extends Controller
                 'message' => 'Lỗi máy chủ: ' . $th->getMessage()
             ], 500);
         }
+    }
+    public function popular(): JsonResponse
+    {
+        $articles = Article::with(['category'])
+            ->where('status', 'published')
+            // Chỉ lấy bài viết trong 7 ngày gần nhất để tránh bài quá cũ
+            ->where('created_at', '>=', now()->subDays(7))
+            ->orderBy('views', 'desc')
+            ->limit(5)
+            ->get();
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Lấy danh sách bài viết phổ biến thành công',
+            'data' => ArticleResource::collection($articles)
+        ], 200);
     }
 }
