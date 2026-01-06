@@ -86,14 +86,13 @@ class AuthController extends Controller
             'role' => 'reader',
         ]);
 
-        // PHẢI CÓ DÒNG NÀY ĐỂ FRONTEND KHÔNG LỖI
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'status' => 201,
             'message' => 'Đăng ký thành công',
             'access_token' => $token,
-            'data' => $user // Đổi từ 'user' thành 'data' để khớp với Frontend của bạn
+            'data' => $user
         ], 201);
     }
 
