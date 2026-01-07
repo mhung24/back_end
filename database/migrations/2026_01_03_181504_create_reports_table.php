@@ -8,7 +8,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('reports', function (Blueprint $table) {
-            $table->id();
+            // Sửa dòng này từ $table->id() thành:
+            $table->uuid('id')->primary();
+
             $table->foreignUuid('reporter_id')->constrained('users')->onDelete('cascade');
             $table->foreignUuid('reported_user_id')->constrained('users')->onDelete('cascade');
 

@@ -12,6 +12,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Api\Moderator\DashboardController;
+use App\Http\Controllers\AuthorController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
@@ -26,6 +27,8 @@ Route::get('/tags', [TagController::class, 'index']);
 Route::get('/articles/popular', [ArticleController::class, 'popular']);
 Route::get('/articles', [ArticleController::class, 'index']);
 
+Route::get('/authors/{id}', [AuthorController::class, 'getProfile']);
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
@@ -39,11 +42,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/articles/mine', [ArticleController::class, 'mine']);
 
+    Route::post('/authors/{id}/follow', [AuthorController::class, 'toggleFollow']);
+    Route::post('/authors/{id}/report', [AuthorController::class, 'reportAuthor']);
+
     Route::prefix('moderator')->group(function () {
         Route::get('/stats', [DashboardController::class, 'getStats']);
         Route::get('/articles/pending', [DashboardController::class, 'getPendingArticles']);
         Route::get('/report', [DashboardController::class, 'getReportData']);
         Route::get('/statistics', [DashboardController::class, 'getStatistics']);
+        Route::get('/articles', [ArticleController::class, 'index']);
+        Route::delete('/articles/{id}', [ArticleController::class, 'destroy']);
         Route::get('/articles/{id}', [DashboardController::class, 'getArticleDetail']);
         Route::patch('/articles/{id}/status', [DashboardController::class, 'updateArticleStatus']);
         Route::get('/reports', [ReportController::class, 'index']);
@@ -56,7 +64,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('users', UserController::class);
 
-    // Đặt route lấy ID cụ thể TRƯỚC apiResource
     Route::get('/articles/{id}', [ArticleController::class, 'show'])->where('id', '[0-9a-fA-F-]{36}');
 
     Route::apiResource('articles', ArticleController::class)->except(['index', 'show']);
