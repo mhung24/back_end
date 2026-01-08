@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\BookmarkController;
+use App\Http\Controllers\Api\CategoryTagController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\Moderator\ReportController;
 use App\Http\Controllers\Api\ProfileController;
@@ -51,6 +52,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/report', [DashboardController::class, 'getReportData']);
         Route::get('/statistics', [DashboardController::class, 'getStatistics']);
         Route::get('/articles', [ArticleController::class, 'index']);
+        Route::get('/content-structure', [CategoryTagController::class, 'index']);
         Route::delete('/articles/{id}', [ArticleController::class, 'destroy']);
         Route::get('/articles/{id}', [DashboardController::class, 'getArticleDetail']);
         Route::patch('/articles/{id}/status', [DashboardController::class, 'updateArticleStatus']);

@@ -1,0 +1,51 @@
+{
+  "folders": [
+	{
+		"path": "../.."
+	}
+],
+  "settings": {
+    "liveServer.settings.multiRootWorkspaceName": "ramdom",
+    "sqltools.connections": [
+      {
+        "connectionTimeout": 15,
+        "mssqlOptions": {
+          "appName": "SQLTools",
+          "useUTC": true,
+          "encrypt": true,
+          "trustServerCertificate": true
+        },
+        "ssh": "Disabled",
+        "previewLimit": 50,
+        "server": "localhost",
+        "port": 1433,
+        "driver": "MSSQL",
+        "name": "connection_test",
+        "username": "sa",
+        "password": "123456"
+      },
+      {
+        "ssh": "Disabled",
+        "previewLimit": 50,
+        "server": "localhost",
+        "port": 5432,
+        "driver": "PostgreSQL",
+        "name": "ecommerce_t8",
+        "database": "db_ecommerce",
+        "username": "admin",
+        "password": "123456"
+      },
+      {
+        "ssh": "Disabled",
+        "previewLimit": 50,
+        "server": "localhost",
+        "port": 5432,
+        "driver": "PostgreSQL",
+        "name": "ecommerce_ t8",
+        "database": "db_ecommerce_t8_2025",
+        "username": "admin",
+        "password": "123456"
+      }
+    ]
+  }
+}
