@@ -1,0 +1,22 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Pull code moi nhat
+        run: |
+          cd C:\laragon\www\back_end
+          git pull origin main
+
+      - name: Update Laravel
+        run: |
+          cd C:\laragon\www\back_end
+          composer install --no-dev
+          php artisan migrate --force
+          php artisan config:cache
+          php artisan route:cache
