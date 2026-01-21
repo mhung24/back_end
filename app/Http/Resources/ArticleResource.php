@@ -19,12 +19,11 @@ class ArticleResource extends JsonResource
             'status' => $this->status,
             'views' => $this->views ?? 0,
 
-            // Đảm bảo tên trường này khớp với SocialSidebar và VNDailyDetail (commentCount)
             'comment_count' => $this->comments_count ?? 0,
             'is_bookmarked' => $this->is_bookmarked ?? false,
 
-            'created_at' => $this->created_at->format('d/m/Y H:i'),
-            'created_at_human' => $this->created_at->diffForHumans(),
+            'created_at' => $this->created_at ? $this->created_at->toIso8601String() : null,
+            'created_at_human' => $this->created_at ? $this->created_at->diffForHumans() : null,
 
             'category' => [
                 'id' => $this->category->id ?? null,
@@ -50,7 +49,7 @@ class ArticleResource extends JsonResource
                     'id' => $comment->id,
                     'content' => $comment->content,
                     'user_id' => $comment->user_id,
-                    'created_at' => $comment->created_at,
+                    'created_at' => $comment->created_at ? $comment->created_at->toIso8601String() : null,
                     'user' => [
                         'name' => $comment->user->name ?? 'Người dùng',
                         'avatar' => $comment->user->avatar_url ?? null,

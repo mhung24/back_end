@@ -30,7 +30,7 @@ class DashboardController extends Controller
     public function getPendingArticles(Request $request)
     {
         try {
-            $query = Article::with(['author', 'category'])
+            $query = Article::with(['author:id,name', 'category:id,name'])
                 ->where('status', 'pending');
 
             if ($request->filled('search')) {
@@ -43,7 +43,7 @@ class DashboardController extends Controller
                 });
             }
 
-            if ($request->filled('category_id')) {
+            if ($request->filled('category_id') && $request->category_id !== 'all') {
                 $query->where('category_id', $request->category_id);
             }
 
@@ -51,11 +51,13 @@ class DashboardController extends Controller
             $categories = Category::all(['id', 'name']);
 
             return response()->json([
+                'status' => 'success',
                 'data' => $articles,
                 'categories' => $categories
             ], 200);
         } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
+            \Log::error("Error in getPendingArticles: " . $e->getMessage());
+            return response()->json(['message' => 'Không thể tải danh sách bài viết chờ duyệt.'], 500);
         }
     }
 
