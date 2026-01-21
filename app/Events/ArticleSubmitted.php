@@ -23,7 +23,6 @@ class ArticleSubmitted implements ShouldBroadcast
 
     public function broadcastOn()
     {
-        // Gửi vào một channel chung dành cho các Moderator
         return new Channel('moderator-notifications');
     }
 
