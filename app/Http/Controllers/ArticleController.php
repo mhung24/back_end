@@ -50,12 +50,13 @@ class ArticleController extends Controller
         return response()->json([
             'status' => 200,
             'message' => 'Lấy danh sách thành công',
-            'data' => ArticleResource::collection($articles->items()),
+            'data' => ArticleResource::collection($articles),
             'pagination' => [
                 'total' => $articles->total(),
                 'limit' => $articles->perPage(),
+                'last_page' => $articles->lastPage(),
+                'current_page' => $articles->currentPage(),
                 'skip' => $skip,
-                'page' => $articles->currentPage(),
             ]
         ], 200);
     }
