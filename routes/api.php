@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\CategoryTagController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\Moderator\ReportController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\SystemController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
@@ -47,6 +48,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/authors/{id}/report', [AuthorController::class, 'reportAuthor']);
 
     Route::prefix('moderator')->group(function () {
+        Route::post('/system/export-sql', [SystemController::class, 'exportSql']);
         Route::get('/stats', [DashboardController::class, 'getStats']);
         Route::get('/articles/pending', [DashboardController::class, 'getPendingArticles']);
         Route::get('/report', [DashboardController::class, 'getReportData']);
